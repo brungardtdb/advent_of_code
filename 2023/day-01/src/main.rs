@@ -1,5 +1,71 @@
 fn main() {
-    let input: &str = 
+    let sum: u32 = get_calibration_sum(CHALLENGE_INPUT);
+    println!("Calibration sum is: {}", sum);    
+}
+
+fn get_calibration_value(input: &str) -> u32{
+    let nums: Vec<u32> = input
+    .chars()
+    .filter_map(|c| c.to_digit(10)) 
+    .collect();
+
+    let tens = *nums
+    .first()
+    .expect("This string doesn't have any numbers!") * 10;
+
+    let ones = *nums
+    .last()
+    .expect("This string doesn't have any numbers!");
+
+    tens + ones
+}
+
+fn get_calibration_sum(input: &str) -> u32 {
+    let parts = input.lines();
+    let mut total: u32 = 0;
+    for p in parts {
+        total += get_calibration_value(p);
+    }
+    total
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn calibration_value_is_12() {
+        assert_eq!(get_calibration_value("1abc2"), 12);
+    }
+
+    #[test]
+    fn calibration_value_is_38() {
+        assert_eq!(get_calibration_value("pqr3stu8vwx"), 38);
+    }
+
+    #[test]
+    fn calibration_value_is_15() {
+        assert_eq!(get_calibration_value("a1b2c3d4e5f"), 15);
+    }
+
+    #[test]
+    fn calibration_value_is_77() {
+        assert_eq!(get_calibration_value("treb7uchet"), 77);
+    }
+
+    #[test]
+    fn calibration_sum_is_142 () {
+        let input =
+"1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet";
+            assert_eq!(get_calibration_sum(input), 142);
+        }
+
+}
+
+static CHALLENGE_INPUT: &str = 
 "mxmkjvgsdzfhseightonetwoeight7
 3five4s84four9rtbzllggz
 75sevenzdrpkv1onetwo
@@ -1001,70 +1067,3 @@ sevenfourfour99seven8
 ktgfiveone76ghj
 7zgzsevenftkdfour186
 ";
-
-    let sum: u32 = get_calibration_sum(input);
-    println!("Calibration sum is: {}", sum);
-    
-}
-
-fn get_calibration_value(input: &str) -> u32{
-    let nums: Vec<u32> = input
-    .chars()
-    .filter_map(|c| c.to_digit(10)) 
-    .collect();
-
-    let tens = *nums
-    .first()
-    .expect("This string doesn't have any numbers!") * 10;
-
-    let ones = *nums
-    .last()
-    .expect("This string doesn't have any numbers!");
-
-    tens + ones
-}
-
-fn get_calibration_sum(input: &str) -> u32 {
-    let parts = input.lines();
-    let mut total: u32 = 0;
-    for p in parts {
-        total += get_calibration_value(p);
-    }
-    total
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn calibration_value_is_12() {
-        assert_eq!(get_calibration_value("1abc2"), 12);
-    }
-
-    #[test]
-    fn calibration_value_is_38() {
-        assert_eq!(get_calibration_value("pqr3stu8vwx"), 38);
-    }
-
-    #[test]
-    fn calibration_value_is_15() {
-        assert_eq!(get_calibration_value("a1b2c3d4e5f"), 15);
-    }
-
-    #[test]
-    fn calibration_value_is_77() {
-        assert_eq!(get_calibration_value("treb7uchet"), 77);
-    }
-
-    #[test]
-    fn calibration_sum_is_142 () {
-        let input =
-"1abc2
-pqr3stu8vwx
-a1b2c3d4e5f
-treb7uchet";
-            assert_eq!(get_calibration_sum(input), 142);
-        }
-
-}
