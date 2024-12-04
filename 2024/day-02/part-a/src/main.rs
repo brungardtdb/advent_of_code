@@ -41,10 +41,15 @@ enum SafetyLevel {
     Unsafe,
 }
 
+enum Direction {
+    Increasing, 
+    Decreasing,
+    Undetermined
+}
+
 impl SafetyLevel {
     fn from(input: Report) -> Self {
-        let mut increasing = false;
-        let mut decreasing = false;
+        let mut direction = Direction::Undetermined;
         let mut previous = None;
         let mut it = input.levels.iter();
         while let Some(level) = it.next() {
@@ -54,19 +59,15 @@ impl SafetyLevel {
             }
 
             if let Some(prev) = previous {
-                if !increasing && !decreasing {
-                    increasing = prev < *level;
-                    decreasing = prev > *level;
-                } else if increasing {
-                    if prev > *level {
-                        return SafetyLevel::Unsafe;
-                    }
+
+                if matches!(direction, Direction::Undetermined) {
+                    direction = get_direction(&prev, level);
                 } else {
-                    if prev < *level {
+                    if changed_direction(&prev, level, &direction) {
                         return SafetyLevel::Unsafe;
                     }
                 }
-                if (prev - *level).abs() == 0 || (prev - *level).abs() > 3 {
+                if exceeds_range(&prev, level, 0, 3) {
                     return SafetyLevel::Unsafe;
                 }
                 previous = Some(*level);
@@ -78,6 +79,28 @@ impl SafetyLevel {
     fn safe(&self) -> bool {
         matches!(*self, SafetyLevel::Safe(_))
     }
+}
+
+fn get_direction(prev: &i32, level: &i32) -> Direction {
+    if prev < level {
+        Direction::Increasing
+    } else if prev > level {
+        Direction::Decreasing
+    } else {
+        Direction::Undetermined
+    }
+}
+
+fn changed_direction(prev: &i32, level: &i32, direction: &Direction) -> bool {
+    match direction {
+        &Direction::Increasing => prev > level,
+        &Direction::Decreasing => prev < level,
+        &Direction::Undetermined => false
+    }
+}
+
+fn exceeds_range(prev: &i32, level: &i32, min: i32, max: i32) -> bool {
+    (prev - *level).abs() == min || (prev - *level).abs() > max
 }
 
 #[cfg(test)]
