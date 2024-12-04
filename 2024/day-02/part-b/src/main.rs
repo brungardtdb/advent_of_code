@@ -10,7 +10,7 @@ fn main() {
 fn get_safe_report_qty(input: String) -> i32 {
     input
         .lines()
-        .map(|line| SafetyLevel::from(Report::from(line)))
+        .map(|line| SafetyLevel::from(Report::from(line), true))
         .filter(|lvl| lvl.safe())
         .collect::<Vec<_>>()
         .into_iter()
@@ -36,6 +36,14 @@ impl Report {
     }
 }
 
+impl Clone for Report {
+    fn clone(&self) -> Report {
+        Report {
+            levels: self.levels.clone(),
+        }
+    }
+}
+
 enum SafetyLevel {
     Safe(Report),
     Unsafe,
@@ -48,11 +56,11 @@ enum Direction {
 }
 
 impl SafetyLevel {
-    fn from(input: Report) -> Self {
+    fn from(input: Report, include_problem_dampener: bool) -> Self {
         let mut direction = Direction::Undetermined;
         let mut previous = None;
-        let mut it = input.levels.iter();
-        while let Some(level) = it.next() {
+        let it = input.levels.iter();
+        for level in it {
             if !previous.is_some() {
                 previous = Some(*level);
                 continue;
@@ -61,13 +69,24 @@ impl SafetyLevel {
             if let Some(prev) = previous {
                 if matches!(direction, Direction::Undetermined) {
                     direction = get_direction(&prev, level);
-                } else {
-                    if changed_direction(&prev, level, &direction) {
+                }
+                if !level_is_safe(&prev, level, &direction) {
+                    dbg!("level is not safe: {}", &level);
+                    if include_problem_dampener {
+                        for (idx, _) in input.levels.iter().enumerate() {
+                            let mut input_copy = input.clone();
+                            input_copy.levels.remove(idx);
+                            let safety_level = SafetyLevel::from(input_copy, false);
+                            if safety_level.safe() {
+                                return safety_level;
+                            } else {
+                                continue;
+                            }
+                        }
+                        return SafetyLevel::Unsafe;
+                    } else {
                         return SafetyLevel::Unsafe;
                     }
-                }
-                if exceeds_range(&prev, level, 0, 3) {
-                    return SafetyLevel::Unsafe;
                 }
                 previous = Some(*level);
             }
@@ -78,6 +97,10 @@ impl SafetyLevel {
     fn safe(&self) -> bool {
         matches!(*self, SafetyLevel::Safe(_))
     }
+}
+
+fn level_is_safe(prev: &i32, level: &i32, direction: &Direction) -> bool {
+    !changed_direction(&prev, level, &direction) && !exceeds_range(&prev, level, 1, 3)
 }
 
 fn get_direction(prev: &i32, level: &i32) -> Direction {
@@ -99,7 +122,7 @@ fn changed_direction(prev: &i32, level: &i32, direction: &Direction) -> bool {
 }
 
 fn exceeds_range(prev: &i32, level: &i32, min: i32, max: i32) -> bool {
-    (prev - *level).abs() == min || (prev - *level).abs() > max
+    (prev - *level).abs() < min || (prev - *level).abs() > max
 }
 
 #[cfg(test)]
@@ -133,29 +156,43 @@ mod test {
     #[test]
     fn report_is_safe() {
         let report = Report::from("7 6 4 2 1");
-        let status = SafetyLevel::from(report);
+        let status = SafetyLevel::from(report, true);
         assert_eq!(true, status.safe());
     }
 
     #[test]
     fn gap_bigger_than_3_unsafe() {
         let report = Report::from("1 2 7 8 9");
-        let status = SafetyLevel::from(report);
+        let status = SafetyLevel::from(report, true);
         assert_eq!(false, status.safe());
     }
 
     #[test]
-    fn change_in_direction_unsafe() {
+    fn second_gap_bigger_than_3_unsafe() {
+        let report = Report::from("9 7 6 2 1");
+        let status = SafetyLevel::from(report, true);
+        assert_eq!(false, status.safe());
+    }
+
+    #[test]
+    fn change_in_direction_safe_w_level_removed() {
         let report = Report::from("1 3 2 4 5");
-        let status = SafetyLevel::from(report);
-        assert_eq!(false, status.safe());
+        let status = SafetyLevel::from(report, true);
+        assert_eq!(true, status.safe());
     }
 
     #[test]
-    fn repeated_level_unsafe() {
+    fn repeated_level_safe_w_level_removed() {
         let report = Report::from("8 6 4 4 1");
-        let status = SafetyLevel::from(report);
-        assert_eq!(false, status.safe());
+        let status = SafetyLevel::from(report, true);
+        assert_eq!(true, status.safe());
+    }
+
+    #[test]
+    fn second_safe_report_is_safe() {
+        let report = Report::from("1 3 6 7 9");
+        let status = SafetyLevel::from(report, true);
+        assert_eq!(true, status.safe());
     }
 
     #[test]
@@ -168,6 +205,6 @@ mod test {
 8 6 4 4 1
 1 3 6 7 9",
         ));
-        assert_eq!(2, qty);
+        assert_eq!(4, qty);
     }
 }
