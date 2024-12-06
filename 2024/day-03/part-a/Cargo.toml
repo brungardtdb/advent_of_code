@@ -1,0 +1,15 @@
+[package]
+name = "part-a"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+[dependencies.regex]
+version = "1.11.1"
+default-features = false
+# Unless you have a specific reason not to, it's good sense to enable standard
+# library support. It enables several optimizations and avoids spin locks. It
+# also shouldn't meaningfully impact compile times or binary size.
+features = ["std"]
